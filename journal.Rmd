@@ -296,21 +296,48 @@ mostPopularArticle_url
 
 ```{r echo=TRUE}
 
-library(httr)
-user_data <- GET("https://api.nytimes.com/svc/mostpopular/v2/viewed/7.json?api-key=YWHPIcHZhaVdsCWE1uAAcHBJPJAOGOta")
-user_data
+# WEBSCRAPING ----
 
-rawToChar(user_data$content)
+# 1.0 LIBRARIES ----
 
-library(jsonlite)
-library(tidyverse)
+library(tidyverse) # Main Package - Loads dplyr, purrr, etc.
+library(rvest)     # HTML Hacking & Web Scraping
+library(xopen)     # Quickly opening URLs
+library(jsonlite)  # converts JSON files to R objects
+library(glue)      # concatenate strings
+library(stringi)   # character string/text processing
 
-mostPopularArticle_url <-user_data %>%
-  .$content %>%
-  rawToChar() %>%
-  fromJSON %>%
-  as_tibble() %>%
-  head(n=10)
+# 1.1 Collect Models and its Prices under Reise ----
+
+url_reise <- "https://www.rosebikes.de/fahrräder/reise"
+
+xopen(url_reise)
+
+html_reise <- read_html(url_reise)
+
+# Web scrape the nodes for models
+
+bike_reise_models <- html_reise %>%
+  
+  html_nodes(css = ".catalog-category-bikes__title .catalog-category-bikes__title-text") %>%
+  html_text() %>%
+  str_remove_all(pattern = "\n")
+  #enframe(name = "position", value = "model_names")
+
+bike_reise_models
+
+bike_reise_price <- html_reise %>%
+  html_nodes(css = ".catalog-category-bikes__price-title") %>%
+  html_text() %>%
+  stringr::str_extract("(?<=\\nab ).*(?=€\\n)") %>%
+  readr::parse_number() %>%
+  str_remove_all(pattern = "\\.") %>%
+  as.numeric()
+  #enframe(name = "posiion", value = "model_price")
+  
+bike_reise_price
+
+tibble(bike_reise_models, bike_reise_price)
 ```
 
 # Adding R stuff
