@@ -1,37 +1,3 @@
----
-title: "Journal (reproducible report)"
-author: "Reuben Vinu Alexander"
-date: "2020-11-05"
-output:
-  html_document:
-    toc: true
-    toc_float: true
-    collapsed: false
-    number_sections: true
-    toc_depth: 3
-    #code_folding: hide
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(message=FALSE,warning=FALSE, cache=TRUE)
-```
-
-**IMPORTANT:** You can delete everything in here and start fresh. You might want to start by not deleting anything above this line until you know what that stuff is doing.
-
-This is an `.Rmd` file. It is plain text with special features. Any time you write just like this, it will be compiled to normal text in the website. If you put a \# in front of your text, it will create a top level-header.
-
-# Intro to the Tidyverse Challenge
-
-Last compiled: `r Sys.Date()`
-
-Notice that whatever you define as a top level header, automatically gets put into the table of contents bar on the left. 
-
-## Second level header
-
-You can add more headers by adding more hashtags. These won't be put into the table of contents
-
-```{r echo=FALSE}
-
 # Data Science at TUHH ------------------------------------------------------
 # SALES ANALYSIS ----
 
@@ -174,22 +140,21 @@ sales_by_year_cat_1_tbl %>%
 
 # 7.1 Excel ----
 
-#install.packages("writexl")
+install.packages("writexl")
 #library("writexl")
 #bike_orderlines_wrangled_tbl %>%
   #write_xlsx("00_data/01_bike_sales/02_wrangled_data/bike_orderlines.xlsx")
 
 # 7.2 CSV ----
 
-#bike_orderlines_wrangled_tbl %>% 
-  #write_csv("00_data/01_bike_sales/02_wrangled_data/bike_orderlines.csv")
+bike_orderlines_wrangled_tbl %>% 
+  write_csv("00_data/01_bike_sales/02_wrangled_data/bike_orderlines.csv")
 # 7.3 RDS ----
 
-#bike_orderlines_wrangled_tbl %>% 
-  #write_rds("00_data/01_bike_sales/02_wrangled_data/bike_orderlines.rds")
+bike_orderlines_wrangled_tbl %>% 
+  write_rds("00_data/01_bike_sales/02_wrangled_data/bike_orderlines.rds")
 
 # 8.0 Challenge----
-
 # Revenue by state
 # Step 1 - Manipulate
 
@@ -259,44 +224,3 @@ revenue_by_year_state_tbl %>%
     title = "Revenue by year and state",
     fill = "City" # Changes the legend name
   )
-```
-
-### third level header
-
-Here's an even lower level header
-
-# Data Acquisition Challenge
-
-Last compiled: `r Sys.Date()`
-
-I'm writing this tutorial going from the top down. And, this is how it will be printed. So, notice the second post is second in the list. If you want your most recent post to be at the top, then make a new post starting at the top. If you want the oldest first, do, then keep adding to the bottom
-
-```{r echo=TRUE}
-library(httr)
-user_data <- GET("https://api.nytimes.com/svc/mostpopular/v2/viewed/7.json?api-key=YWHPIcHZhaVdsCWE1uAAcHBJPJAOGOta")
-user_data
-
-rawToChar(user_data$content)
-
-library(jsonlite)
-library(tidyverse)
-
-mostPopularArticle_url <-user_data %>%
-  .$content %>%
-  rawToChar() %>%
-  fromJSON %>%
-  as_tibble() %>%
-  head(n=10)
-```
-# Adding R stuff
-
-So far this is just a blog where you can write in plain text and serve your writing to a webpage. One of the main purposes of this lab journal is to record your progress learning R. The reason I am asking you to use this process is because you can both make a website, and a lab journal, and learn R all in R-studio. This makes everything really convenient and in the same place. 
-
-So, let's say you are learning how to make a histogram in R. For example, maybe you want to sample 100 numbers from a normal distribution with mean = 0, and standard deviation = 1, and then you want to plot a histogram. You can do this right here by using an r code block, like this:
-
-```{r}
-samples <- rnorm(100, mean=0, sd=1)
-hist(samples)
-```
-
-When you knit this R Markdown document, you will see that the histogram is printed to the page, along with the R code. This document can be set up to hide the R code in the webpage, just delete the comment (hashtag) from the cold folding option in the yaml header up top. For purposes of letting yourself see the code, and me see the code, best to keep it the way that it is. You'll learn that all of these things and more can be customized in each R code block.
