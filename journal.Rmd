@@ -275,12 +275,12 @@ Last compiled: `r Sys.Date()`
 
 I'm writing this tutorial going from the top down. And, this is how it will be printed. So, notice the second post is second in the list. If you want your most recent post to be at the top, then make a new post starting at the top. If you want the oldest first, do, then keep adding to the bottom
 
-## Challenge 1
+## Challenge 2.1
 
 ```{r echo=TRUE}
 library(httr)
 user_data <- GET("https://api.nytimes.com/svc/mostpopular/v2/viewed/7.json?api-key=YWHPIcHZhaVdsCWE1uAAcHBJPJAOGOta")
-user_data
+#user_data
 
 rawToChar(user_data$content)
 
@@ -296,7 +296,7 @@ mostPopularArticle_url <-user_data %>%
 
 mostPopularArticle_url
 ```
-## Challenge 2
+## Challenge 2.2
 
 ```{r echo=TRUE}
 
@@ -344,15 +344,301 @@ bike_reise_price
 tibble(bike_reise_models, bike_reise_price)
 ```
 
-# Adding R stuff
+# Data Wrangling
 
 So far this is just a blog where you can write in plain text and serve your writing to a webpage. One of the main purposes of this lab journal is to record your progress learning R. The reason I am asking you to use this process is because you can both make a website, and a lab journal, and learn R all in R-studio. This makes everything really convenient and in the same place. 
 
 So, let's say you are learning how to make a histogram in R. For example, maybe you want to sample 100 numbers from a normal distribution with mean = 0, and standard deviation = 1, and then you want to plot a histogram. You can do this right here by using an r code block, like this:
 
-```{r}
-samples <- rnorm(100, mean=0, sd=1)
-hist(samples)
-```
+## Challenge 3.1
 
+```{r echo=TRUE}
+
+# Tidyverse
+library(tidyverse)
+library(vroom)
+
+# Data Table
+library(data.table)
+
+# Counter
+library(tictoc)
+
+col_types_assignee <- list(
+  id = col_character(),
+  type = col_double(),
+  name_first = col_skip(),
+  name_last = col_skip(),
+  organization = col_character()
+)
+
+assignee_tbl <- vroom(
+  file       = "00_data/04_patent_analysis_reduced/assignee.tsv", 
+  delim      = "\t", 
+  #col_names  = names(col_types_assignee),
+  col_types  = col_types_assignee,
+  na         = c("", "NA", "NULL")
+)
+
+col_types_patent_assignee <- list(
+  patent_id = col_character(),
+  assignee_id = col_character(),
+  location_id = col_skip()
+)
+
+patent_assignee_tbl <- vroom(
+  file       = "00_data/04_patent_analysis_reduced/patent_assignee.tsv", 
+  delim      = "\t",
+  #col_names  = names(col_types_patent_assignee),
+  col_types  = col_types_patent_assignee,
+  na         = c("", "NA", "NULL")
+)
+
+#assignee_tbl %>% glimpse()
+#patent_assignee_tbl %>% glimpse()
+
+setDT(assignee_tbl)
+
+#assignee_tbl %>% glimpse()
+
+setDT(patent_assignee_tbl)
+
+#patent_assignee_tbl %>% glimpse()
+
+tic()
+
+combined_data_1 <- merge(x = assignee_tbl, y = patent_assignee_tbl,
+                         by.x = "id",
+                         by.y = "assignee_id",
+                         all.x = TRUE,
+                         alall.y = FALSE)
+toc()
+
+#combined_data_1 %>% glimpse()
+
+#to improve computational speed
+#setkey(combined_data_1, "id")
+#key(combined_data_1)
+
+combined_data_1[!is.na(patent_id) & type == 2, .(no_patents = .N),
+                by = .(id, organization)][order(-no_patents)][1:10]
+```
+## Challenge 3.2
+
+```{r echo=TRUE}
+# Tidyverse
+library(tidyverse)
+library(vroom)
+
+# Data Table
+library(data.table)
+
+# Counter
+library(tictoc)
+
+col_types_assignee <- list(
+  id = col_character(),
+  type = col_double(),
+  name_first = col_skip(),
+  name_last = col_skip(),
+  organization = col_character()
+)
+
+assignee_tbl <- vroom(
+  file       = "00_data/04_patent_analysis_reduced/assignee.tsv", 
+  delim      = "\t", 
+  #col_names  = names(col_types_assignee),
+  col_types  = col_types_assignee,
+  na         = c("", "NA", "NULL")
+)
+
+col_types_patent_assignee <- list(
+  patent_id = col_character(),
+  assignee_id = col_character(),
+  location_id = col_skip()
+)
+
+patent_assignee_tbl <- vroom(
+  file       = "00_data/04_patent_analysis_reduced/patent_assignee.tsv", 
+  delim      = "\t",
+  #col_names  = names(col_types_patent_assignee),
+  col_types  = col_types_patent_assignee,
+  na         = c("", "NA", "NULL")
+)
+
+col_types_patent <- list(
+  id = col_character(),
+  type = col_skip(),
+  number = col_skip(),
+  country = col_skip(),
+  date = col_date("%Y-%m-%d"),
+  abstract = col_skip(),
+  title = col_skip(),
+  kind = col_skip(),
+  num_claims = col_skip(),
+  filename = col_skip(),
+  withdrawn = col_skip()
+)
+
+patent_tbl <- vroom(
+  file       = "00_data/04_patent_analysis_reduced/patent.tsv", 
+  delim      = "\t", 
+  col_types  = col_types_patent,
+  na         = c("", "NA", "NULL")
+)
+
+#patent_tbl %>% glimpse()
+
+setDT(assignee_tbl)
+
+setDT(patent_assignee_tbl)
+
+setDT(patent_tbl)
+
+#Remember I cannot repeat name. Might create problem in final journal.html merginh
+combined_data_2 <- merge(x = assignee_tbl, y = patent_assignee_tbl,
+                         by.x = "id",
+                         by.y = "assignee_id",
+                         all.x = TRUE,
+                         alall.y = FALSE)
+
+combined_data_3 <- merge(x = combined_data_2, y = patent_tbl,
+                         by.x = "patent_id",
+                         by.y = "id",
+                         all.x = TRUE,
+                         alall.y = FALSE)
+
+#combined_data_3 %>% glimpse()
+
+# US company which was granted most patents in the month of August
+#(Reduced Data File Used)
+
+combined_data_3[!is.na(patent_id) & type == 2 & 
+                  lubridate::month(date, label = T, abbr = F) == "August", .(no_patents = .N),
+                by = .(id, organization)][order(-no_patents)][1:10]
+```
+## Challenge 3.3
+
+```{r echo=TRUE}
+# Tidyverse
+library(tidyverse)
+library(vroom)
+
+# Data Table
+library(data.table)
+
+# Counter
+library(tictoc)
+
+col_types_assignee <- list(
+  id = col_character(),
+  type = col_double(),
+  name_first = col_skip(),
+  name_last = col_skip(),
+  organization = col_character()
+)
+
+assignee_tbl <- vroom(
+  file       = "00_data/04_patent_analysis_reduced/assignee.tsv", 
+  delim      = "\t", 
+  #col_names  = names(col_types_assignee),
+  col_types  = col_types_assignee,
+  na         = c("", "NA", "NULL")
+)
+
+col_types_patent_assignee <- list(
+  patent_id = col_character(),
+  assignee_id = col_character(),
+  location_id = col_skip()
+)
+
+patent_assignee_tbl <- vroom(
+  file       = "00_data/04_patent_analysis_reduced/patent_assignee.tsv", 
+  delim      = "\t",
+  #col_names  = names(col_types_patent_assignee),
+  col_types  = col_types_patent_assignee,
+  na         = c("", "NA", "NULL")
+)
+
+col_types_patent <- list(
+  id = col_character(),
+  type = col_skip(),
+  number = col_skip(),
+  country = col_skip(),
+  date = col_date("%Y-%m-%d"),
+  abstract = col_skip(),
+  title = col_skip(),
+  kind = col_skip(),
+  num_claims = col_skip(),
+  filename = col_skip(),
+  withdrawn = col_skip()
+)
+
+patent_tbl <- vroom(
+  file       = "00_data/04_patent_analysis_reduced/patent.tsv", 
+  delim      = "\t", 
+  col_types  = col_types_patent,
+  na         = c("", "NA", "NULL")
+)
+
+col_types_uspc <- list(
+  patent_id = col_character(),
+  mainclass_id = col_character(),
+  sequence = col_double()
+)
+
+uspc_tbl <- vroom(
+  file       = "00_data/04_patent_analysis_reduced/uspc.tsv", 
+  delim      = "\t", 
+  col_types  = col_types_uspc,
+  na         = c("", "NA", "NULL")
+)
+
+setDT(assignee_tbl)
+
+setDT(patent_assignee_tbl)
+
+setDT(patent_tbl)
+
+setDT(uspc_tbl)
+
+combined_data_4 <- merge(x = assignee_tbl, y = patent_assignee_tbl,
+                         by.x = "id",
+                         by.y = "assignee_id",
+                         all.x = TRUE,
+                         alall.y = FALSE)
+
+combined_data_5 <- merge(x = combined_data_4, y = patent_tbl,
+                         by.x = "patent_id",
+                         by.y = "id",
+                         all.x = TRUE,
+                         alall.y = FALSE)
+
+combined_data_6 <- merge(x = combined_data_5, y = uspc_tbl,
+                         by = "patent_id",
+                         all.x = TRUE,
+                         alall.y = FALSE)
+
+#combined_data_6 %>% glimpse()
+
+#combined_data_6[!is.na(patent_id) & (type == 2 | type == 3) & sequence == 0, .(no_patents = .N),
+ #               by = .(id, organization)][order(-no_patents)][1:10]
+
+#combined_data_6[!is.na(patent_id) & (type == 2 | type == 3) & sequence == 0, .(no_of_mainclass = .N),
+ #               by = .(mainclass_id)][order(-no_of_mainclass)]
+
+combined_data_6[!is.na(patent_id) & (type == 2 | type == 3) & sequence == 0, .(organization, mainclass_id, no_patents = .N),
+                by = .(id)][order(-no_patents)][,.(organization), by = .(mainclass_id)][,.(mainclass_id)][, .N, by = mainclass_id]
+
+filtered_data <- combined_data_6[!is.na(patent_id) & (type == 2 | type == 3) & sequence == 0, .(organization, mainclass_id, no_patents = .N),
+                by = .(id)][order(-no_patents)][,.(organization, mainclass_id)]
+
+top_10_companies <- combined_data_4[!is.na(patent_id) & (type == 2 | type == 3), .(no_patents = .N),
+                                    by = .(id, organization)][order(-no_patents)][1:10][,.(organization)]  
+
+req_dataSet <- merge(x = filtered_data, y = top_10_companies,
+                         all = FALSE)
+
+req_dataSet[,.(organization, mainclass_id)][, .N, by = mainclass_id][order(-N)][1:5]
+```
 When you knit this R Markdown document, you will see that the histogram is printed to the page, along with the R code. This document can be set up to hide the R code in the webpage, just delete the comment (hashtag) from the cold folding option in the yaml header up top. For purposes of letting yourself see the code, and me see the code, best to keep it the way that it is. You'll learn that all of these things and more can be customized in each R code block.
