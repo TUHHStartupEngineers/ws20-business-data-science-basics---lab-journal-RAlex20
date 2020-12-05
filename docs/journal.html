@@ -419,6 +419,24 @@ div.tocify {
 <div id="challenge" class="section level2">
 <h2><span class="header-section-number">1.1</span> Challenge</h2>
 <p>You can add more headers by adding more hashtags. These won’t be put into the table of contents</p>
+<pre class="r"><code># Data Science at TUHH ------------------------------------------------------
+# SALES ANALYSIS ----
+
+# 1.0 Load libraries ----
+
+library(tidyverse)
+library(readxl)
+
+# 2.0 Importing Files ----
+
+bikes_tbl &lt;- read_excel(path = &quot;00_data/01_bike_sales/01_raw_data/bikes.xlsx&quot;)
+orderlines_tbl &lt;- read_excel(path = &quot;00_data/01_bike_sales/01_raw_data/orderlines.xlsx&quot;)
+
+bikeshops_tbl &lt;- read_excel(path = &quot;00_data/01_bike_sales/01_raw_data/bikeshops.xlsx&quot;)
+
+# 3.0 Examining Data ----
+
+orderlines_tbl</code></pre>
 <pre><code>## # A tibble: 15,644 x 7
 ##    ...1  order.id order.line order.date          customer.id product.id quantity
 ##    &lt;chr&gt;    &lt;dbl&gt;      &lt;dbl&gt; &lt;dttm&gt;                    &lt;dbl&gt;      &lt;dbl&gt;    &lt;dbl&gt;
@@ -433,7 +451,218 @@ div.tocify {
 ##  9 9            3          5 2015-01-10 00:00:00           6       2247        1
 ## 10 10           4          1 2015-01-11 00:00:00          22       2408        1
 ## # ... with 15,634 more rows</code></pre>
-<p><img src="journal_files/figure-html/unnamed-chunk-1-1.png" width="672" /><img src="journal_files/figure-html/unnamed-chunk-1-2.png" width="672" /><img src="journal_files/figure-html/unnamed-chunk-1-3.png" width="672" /><img src="journal_files/figure-html/unnamed-chunk-1-4.png" width="672" /></p>
+<pre class="r"><code># 4.0 Joining Data ----
+
+#left_join(orderlines_tbl, bikes_tbl, by = c(&quot;product.id&quot; = &quot;bike.id&quot;))
+
+bike_orderlines_joined_tbl &lt;- orderlines_tbl %&gt;%
+  left_join(bikes_tbl, by = c(&quot;product.id&quot; = &quot;bike.id&quot;)) %&gt;%
+  left_join(bikeshops_tbl, by = c(&quot;customer.id&quot; = &quot;bikeshop.id&quot;))
+
+# 5.0 Wrangling Data ----
+
+bike_orderlines_wrangled_tbl &lt;- bike_orderlines_joined_tbl %&gt;%
+  separate(col = category,
+           into = c(&quot;category.1&quot;, &quot;category.2&quot;, &quot;category.3&quot;),
+           sep = &quot; - &quot;) %&gt;%
+  
+  separate(col = location,
+           into = c(&quot;city&quot;, &quot;state&quot;),
+           sep = &quot;, &quot;) %&gt;%
+  
+  mutate(total.price = price * quantity) %&gt;%
+  
+  select(-...1, -gender) %&gt;%
+  
+  select(-ends_with(&quot;.id&quot;)) %&gt;%
+  
+  bind_cols(bike_orderlines_joined_tbl %&gt;% select(order.id)) %&gt;%
+  
+  select(order.id, contains(&quot;order&quot;), contains(&quot;model&quot;), contains(&quot;category&quot;),
+         price, quantity, total.price, everything()) %&gt;%
+  
+  rename(bikeshop = name) %&gt;%
+  set_names(names(.) %&gt;% str_replace_all(&quot;\\.&quot;, &quot;_&quot;))
+
+view(bike_orderlines_wrangled_tbl)
+  
+  
+  
+  
+# 6.0 Business Insights ----
+# 6.1 Sales by Year ----
+
+library(lubridate)
+
+# Step 1 - Manipulate
+
+sales_by_year_tbl &lt;- bike_orderlines_wrangled_tbl %&gt;%
+  select(order_date, total_price) %&gt;%
+  
+  mutate(year = year(order_date)) %&gt;%
+  
+  group_by(year) %&gt;%
+  
+  summarise(sales = sum(total_price)) %&gt;%
+  
+  mutate(sales_text = scales::dollar(sales, big.mark = &quot;.&quot;, 
+                                     decimal.mark = &quot;,&quot;, 
+                                     prefix = &quot;&quot;, 
+                                     suffix = &quot; €&quot;))
+
+  
+  
+# Step 2 - Visualize
+
+sales_by_year_tbl %&gt;%
+  ggplot(aes(x = year, y = sales)) +
+           geom_col(fill = &quot;#2DC6D6&quot;) +
+           geom_label(aes(label = sales_text)) +
+           geom_smooth(method = &quot;lm&quot;, se = FALSE) +
+           scale_y_continuous(labels = scales::dollar_format(big.mark = &quot;.&quot;, 
+                                                             decimal.mark = &quot;,&quot;, 
+                                                             prefix = &quot;&quot;, 
+                                                             suffix = &quot; €&quot;)) +
+           labs(
+                title    = &quot;Revenue by year&quot;,
+                subtitle = &quot;Upward Trend&quot;,
+                x = &quot;&quot;, # Override defaults for x and y
+                y = &quot;Revenue&quot;
+               )</code></pre>
+<p><img src="journal_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
+<pre class="r"><code># 6.2 Sales by Year and Category 2 ----
+
+# Step 1 - Manipulate
+
+sales_by_year_cat_1_tbl &lt;- bike_orderlines_wrangled_tbl %&gt;%
+  select(order_date, total_price, category_1) %&gt;%
+  mutate(year = year(order_date)) %&gt;%
+  
+  group_by(year, category_1) %&gt;%
+  summarise(sales = sum(total_price)) %&gt;%
+  ungroup() %&gt;%
+  
+  mutate(sales_text = scales::dollar(sales, big.mark = &quot;.&quot;, 
+                                     decimal.mark = &quot;,&quot;, 
+                                     prefix = &quot;&quot;, 
+                                     suffix = &quot; €&quot;))
+
+view(sales_by_year_cat_1_tbl)
+
+# Step 2 - Visualize
+
+sales_by_year_cat_1_tbl %&gt;%
+  
+  # Set up x, y, fill
+  ggplot(aes(x = year, y = sales, fill = category_1)) +
+  
+  # Geometries
+  geom_col() +
+  
+  facet_wrap(~ category_1) +
+  
+  scale_y_continuous(labels = scales::dollar_format(big.mark = &quot;.&quot;, 
+                                                    decimal.mark = &quot;,&quot;, 
+                                                    prefix = &quot;&quot;, 
+                                                    suffix = &quot; €&quot;)) +
+  labs(
+    title = &quot;Revenue by year and main category&quot;,
+    subtitle = &quot;Each product category has an upward trend&quot;,
+    fill = &quot;Main category&quot; # Changes the legend name
+  )</code></pre>
+<p><img src="journal_files/figure-html/unnamed-chunk-1-2.png" width="672" /></p>
+<pre class="r"><code># 7.0 Writing Files ----
+
+# 7.1 Excel ----
+
+#install.packages(&quot;writexl&quot;)
+#library(&quot;writexl&quot;)
+#bike_orderlines_wrangled_tbl %&gt;%
+  #write_xlsx(&quot;00_data/01_bike_sales/02_wrangled_data/bike_orderlines.xlsx&quot;)
+
+# 7.2 CSV ----
+
+#bike_orderlines_wrangled_tbl %&gt;% 
+  #write_csv(&quot;00_data/01_bike_sales/02_wrangled_data/bike_orderlines.csv&quot;)
+# 7.3 RDS ----
+
+#bike_orderlines_wrangled_tbl %&gt;% 
+  #write_rds(&quot;00_data/01_bike_sales/02_wrangled_data/bike_orderlines.rds&quot;)
+
+# 8.0 Challenge----
+
+# Revenue by state
+
+# Step 1 - Manipulate
+
+revenue_by_state_tbl &lt;- bike_orderlines_wrangled_tbl %&gt;%
+  select(total_price, state) %&gt;%
+  
+  group_by(state) %&gt;%
+  summarise(revenue = sum(total_price)) %&gt;%
+  
+  mutate(revenue_text = scales::dollar(revenue, big.mark = &quot;.&quot;, 
+                                     decimal.mark = &quot;,&quot;, 
+                                     prefix = &quot;&quot;, 
+                                     suffix = &quot; €&quot;))
+view(revenue_by_state_tbl)
+
+# Step 2 - Visualize
+
+revenue_by_state_tbl %&gt;%
+  ggplot(aes(x = state, y = revenue)) +
+  geom_col(fill = &quot;#2DC6D6&quot;) +
+  geom_label(aes(label = revenue_text)) +
+  geom_smooth(method = &quot;lm&quot;, se = FALSE) +
+  scale_y_continuous(labels = scales::dollar_format(big.mark = &quot;.&quot;, 
+                                                    decimal.mark = &quot;,&quot;, 
+                                                    prefix = &quot;&quot;, 
+                                                    suffix = &quot; €&quot;)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  
+  labs(
+    title    = &quot;Revenue by state&quot;,
+    x = &quot;&quot;, # Override defaults for x and y
+    y = &quot;Revenue&quot;
+  )</code></pre>
+<p><img src="journal_files/figure-html/unnamed-chunk-1-3.png" width="672" /></p>
+<pre class="r"><code># Revenue by year and location
+
+# Step 1 - Manipulate
+revenue_by_year_state_tbl &lt;- bike_orderlines_wrangled_tbl %&gt;%
+  select(order_date, total_price, state) %&gt;%
+  mutate(year = year(order_date)) %&gt;%
+  
+  group_by(year, state) %&gt;%
+  summarize(revenue = sum(total_price)) %&gt;%
+  
+  mutate(revenue_text = scales::dollar(revenue, big.mark = &quot;.&quot;, 
+                                       decimal.mark = &quot;,&quot;, 
+                                       prefix = &quot;&quot;, 
+                                       suffix = &quot; €&quot;))
+view(revenue_by_year_state_tbl)
+
+# Step 2 - Visualize
+
+revenue_by_year_state_tbl %&gt;%
+  
+  # Set up x, y, fill
+  ggplot(aes(x = year, y = revenue, fill = state)) +
+  
+  # Geometries
+  geom_col() +
+  
+  facet_wrap(~ state) +
+  
+  scale_y_continuous(labels = scales::dollar_format(big.mark = &quot;.&quot;, 
+                                                    decimal.mark = &quot;,&quot;, 
+                                                    prefix = &quot;&quot;, 
+                                                    suffix = &quot; €&quot;)) +
+  labs(
+    title = &quot;Revenue by year and state&quot;,
+    fill = &quot;City&quot; # Changes the legend name
+  )</code></pre>
+<p><img src="journal_files/figure-html/unnamed-chunk-1-4.png" width="672" /></p>
 <div id="third-level-header" class="section level3">
 <h3><span class="header-section-number">1.1.1</span> third level header</h3>
 <p>Here’s an even lower level header</p>
