@@ -26,11 +26,11 @@ Last compiled: `r Sys.Date()`
 
 Notice that whatever you define as a top level header, automatically gets put into the table of contents bar on the left. 
 
-## Second level header
+## Challenge
 
 You can add more headers by adding more hashtags. These won't be put into the table of contents
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 
 # Data Science at TUHH ------------------------------------------------------
 # SALES ANALYSIS ----
@@ -50,7 +50,7 @@ bikeshops_tbl <- read_excel(path = "00_data/01_bike_sales/01_raw_data/bikeshops.
 # 3.0 Examining Data ----
 
 orderlines_tbl
-glimpse(orderlines_tbl)
+
 # 4.0 Joining Data ----
 
 #left_join(orderlines_tbl, bikes_tbl, by = c("product.id" = "bike.id"))
@@ -93,6 +93,7 @@ view(bike_orderlines_wrangled_tbl)
 # 6.1 Sales by Year ----
 
 library(lubridate)
+
 # Step 1 - Manipulate
 
 sales_by_year_tbl <- bike_orderlines_wrangled_tbl %>%
@@ -147,6 +148,7 @@ sales_by_year_cat_1_tbl <- bike_orderlines_wrangled_tbl %>%
                                      suffix = " €"))
 
 view(sales_by_year_cat_1_tbl)
+
 # Step 2 - Visualize
 
 sales_by_year_cat_1_tbl %>%
@@ -191,6 +193,7 @@ sales_by_year_cat_1_tbl %>%
 # 8.0 Challenge----
 
 # Revenue by state
+
 # Step 1 - Manipulate
 
 revenue_by_state_tbl <- bike_orderlines_wrangled_tbl %>%
@@ -225,6 +228,7 @@ revenue_by_state_tbl %>%
   )
 
 # Revenue by year and location
+
 # Step 1 - Manipulate
 revenue_by_year_state_tbl <- bike_orderlines_wrangled_tbl %>%
   select(order_date, total_price, state) %>%
