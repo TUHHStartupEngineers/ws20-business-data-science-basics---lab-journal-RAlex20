@@ -16,21 +16,13 @@ output:
 knitr::opts_chunk$set(message=FALSE,warning=FALSE, cache=TRUE)
 ```
 
-**IMPORTANT:** You can delete everything in here and start fresh. You might want to start by not deleting anything above this line until you know what that stuff is doing.
-
-This is an `.Rmd` file. It is plain text with special features. Any time you write just like this, it will be compiled to normal text in the website. If you put a \# in front of your text, it will create a top level-header.
-
 # Intro to the Tidyverse Challenge
 
 Last compiled: `r Sys.Date()`
 
-Notice that whatever you define as a top level header, automatically gets put into the table of contents bar on the left. 
+## Challenge 1_1 & 1_2
 
-## Challenge
-
-You can add more headers by adding more hashtags. These won't be put into the table of contents
-
-```{r echo=TRUE}
+```{r fig.width=13, fig.height=7, echo=TRUE}
 
 # Data Science at TUHH ------------------------------------------------------
 # SALES ANALYSIS ----
@@ -261,21 +253,16 @@ revenue_by_year_state_tbl %>%
                                                     suffix = " €")) +
   labs(
     title = "Revenue by year and state",
-    fill = "City" # Changes the legend name
-  )
+    fill = "City"
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-
-### third level header
-
-Here's an even lower level header
 
 # Data Acquisition Challenge
 
 Last compiled: `r Sys.Date()`
 
-I'm writing this tutorial going from the top down. And, this is how it will be printed. So, notice the second post is second in the list. If you want your most recent post to be at the top, then make a new post starting at the top. If you want the oldest first, do, then keep adding to the bottom
-
-## Challenge 2.1
+## Challenge 2_1
 
 ```{r echo=TRUE}
 library(httr)
@@ -296,7 +283,7 @@ mostPopularArticle_url <-user_data %>%
 
 mostPopularArticle_url
 ```
-## Challenge 2.2
+## Challenge 2_2
 
 ```{r echo=TRUE}
 
@@ -346,11 +333,7 @@ tibble(bike_reise_models, bike_reise_price)
 
 # Data Wrangling
 
-So far this is just a blog where you can write in plain text and serve your writing to a webpage. One of the main purposes of this lab journal is to record your progress learning R. The reason I am asking you to use this process is because you can both make a website, and a lab journal, and learn R all in R-studio. This makes everything really convenient and in the same place. 
-
-So, let's say you are learning how to make a histogram in R. For example, maybe you want to sample 100 numbers from a normal distribution with mean = 0, and standard deviation = 1, and then you want to plot a histogram. You can do this right here by using an r code block, like this:
-
-## Challenge 3.1
+## Challenge 3_1
 
 ```{r echo=TRUE}
 
@@ -423,7 +406,7 @@ toc()
 combined_data_1[!is.na(patent_id) & type == 2, .(no_patents = .N),
                 by = .(id, organization)][order(-no_patents)][1:10]
 ```
-## Challenge 3.2
+## Challenge 3_2
 
 ```{r echo=TRUE}
 # Tidyverse
@@ -517,7 +500,7 @@ combined_data_3[!is.na(patent_id) & type == 2 &
                   lubridate::month(date, label = T, abbr = F) == "August", .(no_patents = .N),
                 by = .(id, organization)][order(-no_patents)][1:10]
 ```
-## Challenge 3.3
+## Challenge 3_3
 
 ```{r echo=TRUE}
 # Tidyverse
@@ -650,6 +633,7 @@ library(tidyverse)
 library(ggthemes)
 library(lubridate)
 library(ggrepel)
+library(lubridate)
 
 covid_data_tbl <- read_csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv")
 
@@ -691,7 +675,7 @@ cumulative_cases_tbl  %>%
   expand_limits(y = 0) +
   
   scale_x_continuous(breaks = cumulative_cases_tbl$month,
-                     labels = month(cumulative_cases_tbl$month, label = T, abbr = FALSE)) +
+                     labels = lubridate::month(cumulative_cases_tbl$month, label = T, abbr = FALSE)) +
   
   scale_y_continuous(breaks = seq(0e6, 16e6, by = 2.5e6),
                      labels = scales::dollar_format(scale = 1/1e6,
@@ -709,4 +693,71 @@ cumulative_cases_tbl  %>%
         legend.position  = "bottom",
         plot.title = element_text(face = "bold"),
         axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Challenge 4_2
+
+```{r fig.width=15, fig.height=7, echo=TRUE}
+library(tidyverse)
+library(lubridate)
+library(maps)
+#install.packages("maps")
+
+covid_data_tbl <- read_csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv")
+
+mortality_rate_tbl <- covid_data_tbl %>%
+  select(countriesAndTerritories, deaths, popData2019) %>% 
+  set_names(c("country", "deaths", "population")) %>%
+  
+  # Selecting columns to focus on and adding a month column
+  mutate(mortality_rate = deaths/population)%>%
+  mutate(across(country, str_replace_all, "_", " ")) %>%
+  mutate(country = case_when(
+    
+    country == "United Kingdom" ~ "UK",
+    country == "United States of America" ~ "USA",
+    country == "Czechia" ~ "Czech Republic",
+    TRUE ~ country
+  )) %>%
+  
+  group_by(country) %>%
+  summarize(deaths=sum(deaths),population=max(population),mortality_rate = sum(mortality_rate)) %>%
+  ungroup() 
+
+
+world <- map_data("world")
+
+world_mortality_rate_tbl <- left_join(x = world, y = mortality_rate_tbl, by=c("region" = "country")) 
+
+#Canvas
+
+ggplot(world_mortality_rate_tbl, aes(x=long, y=lat, group = group, fill = (mortality_rate))) + 
+  
+#Geoms
+  
+  geom_polygon(colour = "white") +
+  
+#Formatting
+  
+  scale_fill_continuous(low = "cornflowerblue",
+                        high = "black",
+                        guide="colorbar",
+                        labels = scales::label_percent(
+                          accuracy = NULL,
+                          scale = 100,
+                          prefix = "",
+                          suffix = "%",
+                          big.mark = " ",
+                          decimal.mark = ".",
+                          trim = TRUE),
+                        limits = c(0, .0015)) +
+  
+  
+  
+  theme_light() +
+  labs(fill = "Mortality Rate" ,
+       title = "Confirmed COVID-19 deaths relative to the size of population", 
+       subtitle = "More than 1.2 Million confirmed COVID-19 deaths worldwide",
+       x="long", 
+       y="lat")
 ```
