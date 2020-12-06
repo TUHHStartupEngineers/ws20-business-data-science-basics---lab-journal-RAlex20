@@ -16,7 +16,7 @@ output:
 knitr::opts_chunk$set(message=FALSE,warning=FALSE, cache=TRUE)
 ```
 
-# Intro to the Tidyverse Challenge
+# Intro to the Tidyverse
 
 Last compiled: `r Sys.Date()`
 
@@ -258,7 +258,7 @@ revenue_by_year_state_tbl %>%
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-# Data Acquisition Challenge
+# Data Acquisition
 
 Last compiled: `r Sys.Date()`
 
@@ -269,7 +269,7 @@ library(httr)
 user_data <- GET("https://api.nytimes.com/svc/mostpopular/v2/viewed/7.json?api-key=YWHPIcHZhaVdsCWE1uAAcHBJPJAOGOta")
 #user_data
 
-rawToChar(user_data$content)
+#rawToChar(user_data$content)
 
 library(jsonlite)
 library(tidyverse)
